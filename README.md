@@ -15,7 +15,7 @@ pip install -r requirements.txt
 ### Esempio di utilizzo
 
 ```python
-main.py [-h] [-g] [-v] [-s] [-k THRESHOLD] [-e EDGES] [-c CIRCLES] [-cf {1,2,3}] [-sf {1,2,3}] [-a {1,2,3}]
+python main.py [-h] [-g] [-v] [-s] [-k THRESHOLD] [-e EDGES] [-c CIRCLES] [-cf {1,2,3}] [-sf {1,2,3}] [-a {1,2,3}]
 ```
 
 ```python
