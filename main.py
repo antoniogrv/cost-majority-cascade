@@ -30,7 +30,7 @@ def setup_options() -> None:
         parser.add_argument('-sf', '--submodular_function', default = config.DEFAULT_SUBMODULAR_FUNCTION, choices = ['1', '2', '3'])
         parser.add_argument('-a', '--algorithm', default = config.DEFAULT_ALGORITHM, choices = ['1', '2', '3'])
 
-        args: argparse.Namespace = parser.parse_args()
+        args = parser.parse_args()
 
         print(f"Caricati i nodi da {args.circles}")
         print(f"Caricati gli archi da {args.edges}")
@@ -39,8 +39,8 @@ def setup_options() -> None:
 
 
 class SpreadingProcess():
-    def __init__(self, options: argparse.Namespace):
-        self.options: argparse.Namespace = options
+    def __init__(self, options):
+        self.options = options
 
         self.G: Graph = self.setup_graph()
         self.k: int = int(self.options.threshold)

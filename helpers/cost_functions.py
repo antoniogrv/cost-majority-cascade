@@ -38,7 +38,7 @@ class CostFunctionFactory():
             costSum = 0
 
             for u in v:
-                costSum += math.ceil(G.degree(u)/  2)
+                costSum += math.ceil(G.degree(u) / 2)
             return costSum
         else:
             return math.ceil(G.degree(v) / 2)
@@ -49,10 +49,10 @@ class CostFunctionFactory():
             costSum = 0
 
             for u in v:
-                costSum += math.floor((G.degree(u) ** 2) / self.d_max)
+                costSum += math.ceil((G.degree(u) ** 2) / self.d_max)
             return costSum
         else:
-            return math.floor((G.degree(v) ** 2) / self.d_max)
+            return math.ceil((G.degree(v) ** 2) / self.d_max)
         
 
     def create_cost_map(self):
@@ -66,8 +66,8 @@ class CostFunctionFactory():
 
         self.cost_map = cost_map
         
-        if self.verbose:
-            self.print_cost_map()
+        #if self.verbose:
+        #    self.print_cost_map()
 
         return cost_map
     

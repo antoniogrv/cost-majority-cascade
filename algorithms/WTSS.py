@@ -23,9 +23,6 @@ def WTSS(G,k, cost_function: callable):
     assign_treshold(G_copy)
     costs(G_copy, cost_function)
 
-    print_costs(G_copy)
-    print_tresholds(G_copy)
-
     #inizialmente il seedset è vuoto
     seed_set = []
     to_delete = None
