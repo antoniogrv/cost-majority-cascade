@@ -19,9 +19,14 @@ class CascadeProcess():
                 print("\n##### [i - Cascade] Iterazione successiva #####\n")
 
             prev_influenced: list = copy.deepcopy(influencing)
+            casted_prev_influenced = [str(node) for node in prev_influenced]
 
-            for node in set(self.graph.nodes()).difference(prev_influenced):
-                intersection = len(set(self.graph.neighbors(node)).intersection(prev_influenced))
+            for node in self.graph.nodes():
+                if node in casted_prev_influenced:
+                    continue
+
+                intersection = len([x for x in casted_prev_influenced if x in list(self.graph.neighbors(node))])
+
                 degree_threshold = math.ceil(self.graph.degree(node) / 2)
 
                 if self.verbose:
@@ -30,10 +35,7 @@ class CascadeProcess():
                     print(f"[i - {node}] Il taglio dell'intersezione fra i vicini di {node} e i nodi influenzanti è {intersection}")
                     print(f"[i - {node}] Il nodo {node} sarà influenzato dal seed set: {intersection >= degree_threshold}\n")
 
-                if node in prev_influenced:
-                    continue
-
                 if intersection >= degree_threshold:
-                    influencing.append(node)
+                    influencing.append(int(node))
         
         return influencing

@@ -129,6 +129,8 @@ def save_results(file_path, results, graph, seed_set, influenced_nodes):
     color_map = []
 
     for node in graph.nodes():
+        print("Nodo", node, "SeedSet", seed_set, "Confronto", int(node) in seed_set)
+        print("Il tipo di int(node) è ", type(int(node)), "Il tipo di seedset[1] è ", type(seed_set[1]))
         if node in seed_set:
             color_map.append('red')
         else:
@@ -146,7 +148,7 @@ def save_results(file_path, results, graph, seed_set, influenced_nodes):
     for node in graph.nodes():
         if node in seed_set:
             color_map.append('red')
-        elif node in influenced_nodes: 
+        elif int(node) in influenced_nodes: 
             color_map.append('blue')
         else:
             color_map.append('gray')
