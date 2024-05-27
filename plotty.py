@@ -3,6 +3,7 @@ import time
 import argparse
 import networkx as nx
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from helpers.cascade_process import CascadeProcess
 from helpers.spreading_algorithm import SpreadingAlgorithm
@@ -42,13 +43,18 @@ if __name__ == "__main__":
     if not os.path.exists("results/plots"):
         os.makedirs("results/plots")
 
+    total_iterations = len(k_list) * len(cost_functions) * len(submodular_functions)
+
+    # Crea una barra di avanzamento
+    progress_bar = tqdm(total=total_iterations, desc="Progresso")
+
     """
     CSG
     """
     for i, k in enumerate(k_list):
         for j, cost_function in enumerate(cost_functions):
             for z, submodular_function in enumerate(submodular_functions):
-                print(f"###### CSG - k: {k}, cost_function: {cost_function}, submodular_function: {submodular_function} ######")
+                progress_bar.update(1)
 
                 options = Options(
                     print_graph=False,
@@ -79,11 +85,11 @@ if __name__ == "__main__":
                     cascade_process \
                     .get_influenced_nodes()
 
-                print(f"Influenced Nodes: {influenced_nodes}")
-
                 inf_sizes_csg[i][j][z] = len(influenced_nodes)
 
                 print_results(inf_sizes_csg)
+
+    progress_bar.close()
 
     for j, submodular_function in enumerate(submodular_functions):
         for z, cost_function in enumerate(cost_functions):
@@ -92,9 +98,11 @@ if __name__ == "__main__":
         
         plt.xlabel('Budget (k)')
         plt.ylabel('Numero di nodi influenzati')
-        plt.title(f'CSG - Numero di nodi influenzati rispetto al budget k (funzione submodulare {submodular_function})')
+        plt.title(f'CSG - Numero di nodi influenzati rispetto al budget k (fn. sub. {submodular_function})')
         plt.legend()
-        plt.show()
+        
+        plt.savefig(f"results/csg_submodular_function_{j}.png", format = "PNG")
+        plt.clf()
 
 
 
@@ -110,8 +118,8 @@ if __name__ == "__main__":
                 verbose=False,
                 save=False,
                 threshold=k,
-                edges='networks/generated_networks/graph.EDGES',
-                circles='networks/generated_networks/graph.CIRCLES',
+                edges='networks/sample_networks/107.edges',
+                circles='networks/sample_networks/107.circles',
                 cost_function=cost_function,
                 submodular_function=1,
                 algorithm=2
@@ -134,8 +142,6 @@ if __name__ == "__main__":
                 cascade_process \
                 .get_influenced_nodes()
 
-            print(f"Influenced Nodes: {influenced_nodes}")
-
             inf_sizes_wtss[i][j] = len(influenced_nodes)
             print("Matrice", inf_sizes_wtss)
 
@@ -149,7 +155,9 @@ if __name__ == "__main__":
         plt.title('WTSS - Numero di nodi influenzati rispetto al budget k')
 
     plt.legend()
-    plt.show()
+
+    plt.savefig(f"results/wtss.png", format = "PNG")
+    plt.clf()
 
     """
     MySeeds
@@ -163,8 +171,8 @@ if __name__ == "__main__":
                 verbose=False,
                 save=False,
                 threshold=k,
-                edges='networks/generated_networks/graph.EDGES',
-                circles='networks/generated_networks/graph.CIRCLES',
+                edges='networks/sample_networks/107.edges',
+                circles='networks/sample_networks/107.circles',
                 cost_function=cost_function,
                 submodular_function=1,
                 algorithm=3
@@ -187,8 +195,6 @@ if __name__ == "__main__":
                 cascade_process \
                 .get_influenced_nodes()
 
-            print(f"Influenced Nodes: {influenced_nodes}")
-
             inf_sizes_custom[i][j] = len(influenced_nodes)
 
             print(inf_sizes_custom)
@@ -203,6 +209,7 @@ if __name__ == "__main__":
         plt.title('MySeeds - Numero di nodi influenzati rispetto al budget k')
 
     plt.legend()
-    plt.show()
+    plt.savefig(f"results/custom.png", format = "PNG")
+    plt.clf()
 
 
