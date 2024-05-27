@@ -15,7 +15,7 @@ pip install -r requirements.txt
 ### Esempio di utilizzo
 
 ```python
-python main.py [-h] [-g] [-v] [-k THRESHOLD] [-e EDGES] [-c CIRCLES] [-cf {1,2,3}] [-sf {1,2,3}] [-a {1,2,3}]
+main.py [-h] [-g] [-v] [-s] [-k THRESHOLD] [-e EDGES] [-c CIRCLES] [-cf {1,2,3}] [-sf {1,2,3}] [-a {1,2,3}]
 ```
 
 ```python
@@ -25,8 +25,8 @@ python main.py
 ### Abilita la modalità verbosa
 python main.py -v
 
-### Abilita la stampa di debug del grafo
-python main.py -g
+### Abilita la stampa di debug del grafo e salva i risultati
+python main.py -g -s
 
 ### Seleziona ed utilizza un grafo personalizzato
 python main.py -e=networks/sample_networks/0.edges -c=networks/sample_networks/0.circles
