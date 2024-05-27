@@ -20,8 +20,40 @@ def WTSS(G,k, cost_function: callable):
     third_case_node_selection = Counter()
 
     #G.degree(u) -> grado del nodo u
-    while len(seed_set) < k :
-        
+    
+    while len(G_copy.nodes) > 0:
+
+        for node in G_copy.nodes():
+            if G_copy.nodes[node]["t"] == 0:
+                to_delete = node
+                neighbors = list(G_copy.neighbors(node))
+                for neighbor in neighbors:
+                    treshold = G_copy.nodes[neighbor]["t"]
+                    G_copy.nodes[neighbor]["t"] = max(0,(treshold - 1))
+                G_copy.remove_node(to_delete)
+            
+        if G_copy.nodes:
+            for node in G_copy.nodes():
+                if G_copy.degree(node) < G_copy.nodes[node]["t"]:
+                    seed_set.add(node)
+                    to_delete = node
+                    neighbors = list(G_copy.neighbors(node))
+                    for neighbor in neighbors:
+                        treshold = G_copy.nodes[neighbor]["t"]
+                        G_copy.nodes[neighbor]["t"] -= 1
+                    G_copy.remove_node(to_delete)
+            if len(seed_set) == k : 
+                return seed_set
+            
+            for node in G_copy.nodes():
+                cost = G_copy.nodes[node]["cost"]
+                treshold = G_copy.nodes[node]["t"]
+                degree = G_copy.degree(node)
+                third_case_node_selection[node] = ((cost * treshold) / (degree * (degree + 1))) if (degree != 0) else 0
+                to_delete = max(third_case_node_selection, key=third_case_node_selection.get)
+                G_copy.remove_node(to_delete)
+
+    '''while len(seed_set) < k :
 
         for node in G_copy.nodes():
             #Caso 1 -> Se la soglia del nodo è 0, allora a tutti i vicini imposta la soglia come 
@@ -62,7 +94,7 @@ def WTSS(G,k, cost_function: callable):
             print("Grafo vuoto, esco dal loop")
             break
 
-        return seed_set
+    return seed_set'''
 
 
 
