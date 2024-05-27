@@ -2,6 +2,8 @@ import argparse
 import networkx as nx
 import matplotlib.pyplot as plt
 
+from helpers.spreading_algorithm import SpreadingAlgorithm
+
 import helpers.cost_functions as cf
 import helpers.network_loader as nl
 import helpers.spreading_algorithm as sa
@@ -34,18 +36,18 @@ def setup_options():
 
 
 class SpreadingProcess():
-    def __init__(self, options):
-        self.options = options
+    def __init__(self, options: argparse.Namespace):
+        self.options: argparse.Namespace = options
 
-        self.G = self.setup_graph()
-        self.k = self.options.threshold
-        self.cost_function = self.setup_cost_function()
-        self.spreading_algorithm = self.setup_spreading_algorithm()
+        self.G: Graph = self.setup_graph()
+        self.k: int = self.options.threshold
+        self.cost_function: callable = self.setup_cost_function()
+        self.spreading_algorithm: SpreadingAlgorithm = self.setup_spreading_algorithm()
 
 
     # Per selezionare liste di nodi ed archi differenti, usare le opzioni -c (--circles) ed -e (--edges)
     def setup_graph(self) -> Graph:
-        graph = nl.read_network(
+        graph: Graph = nl.read_network(
             edges_file_path = self.options.edges,
             circles_file_path = self.options.circles
         )
@@ -75,7 +77,7 @@ class SpreadingProcess():
 
 
     # Per selezionare un algoritmo, usare l'opzione -a oppure --algorithm, es. -a 1 (valori ammessi: 1, 2, 3)
-    def setup_spreading_algorithm(self) -> callable:
+    def setup_spreading_algorithm(self) -> SpreadingAlgorithm:
         selected_algorithm_index: int = int(self.options.algorithm) # Rappresenta l'algoritmo scelto (1, 2 o 3)
 
         """
@@ -84,7 +86,7 @@ class SpreadingProcess():
         """
         selected_submodular_function_index: int = int(self.options.submodular_function) 
 
-        spreading_algorithm = sa.SpreadingAlgorithm(
+        spreading_algorithm: SpreadingAlgorithm = SpreadingAlgorithm(
             selected_algorithm_index = selected_algorithm_index,
             selected_submodular_function_index = selected_submodular_function_index,
             graph = self.G,
@@ -97,8 +99,11 @@ class SpreadingProcess():
     
 
 if __name__ == "__main__":
-    spreading_process = SpreadingProcess(options = setup_options())
+    spreading_process: SpreadingProcess = SpreadingProcess(options = setup_options())
 
-    seed_set = spreading_process.spreading_algorithm.get_seed_set()
+    seed_set = \
+         spreading_process   \
+        .spreading_algorithm \
+        .get_seed_set()
 
     print(seed_set)
