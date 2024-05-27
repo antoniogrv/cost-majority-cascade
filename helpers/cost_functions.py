@@ -4,12 +4,16 @@ import random
 from networkx import Graph
 
 class CostFunctionFactory():
-    def __init__(self, index, graph, range_min, range_max, d_max, verbose = False):
+    def __init__(self, selected_algorithm_index, graph, range_min, range_max, d_max, verbose = False):
+        self.selected_algorithm_index = selected_algorithm_index
+
         self.G = graph
         self.range_min = range_min
         self.range_max = range_max
         self.d_max = d_max
+
         self.verbose = verbose
+
         self.cost_map = self.create_cost_map()
 
 
@@ -68,15 +72,15 @@ class CostFunctionFactory():
         return cost_map
     
     
-    def get_function(self, index: int):
-        if index not in [1, 2, 3]:
+    def get_function(self):
+        if self.selected_algorithm_index not in [1, 2, 3]:
             raise IndexError("La funzione di costo indicata non è valida.")
 
-        if index == 1:
+        if self.selected_algorithm_index == 1:
             fn = self.first
-        elif index == 2:
+        elif self.selected_algorithm_index == 2:
             fn = self.second
-        elif index == 3: # Custom Function Cost
+        elif self.selected_algorithm_index == 3: # Custom Function Cost
             fn = self.third
 
         return fn

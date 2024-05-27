@@ -1,12 +1,10 @@
 import argparse
-import random
 import networkx as nx
 import matplotlib.pyplot as plt
 
-import cost_seeds_greedy_algorithm as alg
-import cost_functions as cf
-import submodular_functions as sf
-import network_loader as nl 
+import helpers.cost_functions as cf
+import helpers.network_loader as nl
+import helpers.spreading_algorithm as sa
 import default_config as config
 
 from networkx import Graph
@@ -23,8 +21,9 @@ def setup_options():
         parser.add_argument('-e', '--edges', default = config.DEFAULT_EDGES)
         parser.add_argument('-c', '--circles', default = config.DEFAULT_CIRCLES)
 
-        parser.add_argument('-cf', '--cost_function', default = '1', choices = ['1', '2', '3'])
-        parser.add_argument('-a', '--algorithm', default = '1', choices = ['1', '2', '3'])
+        parser.add_argument('-cf', '--cost_function', default = config.DEFAULT_COST_FUNCTION, choices = ['1', '2', '3'])
+        parser.add_argument('-sf', '--submodular_function', default = config.DEFAULT_SUBMODULAR_FUNCTION, choices = ['1', '2', '3'])
+        parser.add_argument('-a', '--algorithm', default = config.DEFAULT_ALGORITHM, choices = ['1', '2', '3'])
 
         args = parser.parse_args()
 
@@ -34,14 +33,14 @@ def setup_options():
         return args
 
 
-class Runner():
+class SpreadingProcess():
     def __init__(self, options):
         self.options = options
 
         self.G = self.setup_graph()
         self.k = self.options.threshold
         self.cost_function = self.setup_cost_function()
-        self.algorithm = self.setup_algorithm()
+        self.spreading_algorithm = self.setup_spreading_algorithm()
 
 
     # Per selezionare liste di nodi ed archi differenti, usare le opzioni -c (--circles) ed -e (--edges)
@@ -61,10 +60,10 @@ class Runner():
 
     # Per selezionare una funzione di costo, usare l'opzione -cf oppure --cost-function, es. -cf 1 (valori ammessi: 1, 2, 3)
     def setup_cost_function(self) -> callable:
-        index: int = int(self.options.cost_function) # Rappresenta la funzione di costo scelta (1, 2 o 3)
+        selected_algorithm_index: int = int(self.options.cost_function) # Rappresenta la funzione di costo scelta (1, 2 o 3)
 
         cost_function_factory: cf.CostFunctionFactory = cf.CostFunctionFactory(
-            index = index,
+            selected_algorithm_index = selected_algorithm_index,
             graph = self.G,
             range_min = config.DEFAULT_RANGE_MIN,
             range_max = config.DEFAULT_RANGE_MAX,
@@ -72,36 +71,34 @@ class Runner():
             verbose = self.options.verbose
         )
         
-        return cost_function_factory.get_function(index)
+        return cost_function_factory.get_function()
 
 
     # Per selezionare un algoritmo, usare l'opzione -a oppure --algorithm, es. -a 1 (valori ammessi: 1, 2, 3)
-    def setup_algorithm(self) -> callable:
-        index = int(self.options.algorithm) # Rappresenta l'algoritmo scelto (1, 2 o 3)
+    def setup_spreading_algorithm(self) -> callable:
+        selected_algorithm_index: int = int(self.options.algorithm) # Rappresenta l'algoritmo scelto (1, 2 o 3)
 
-        # Cost-Seeds-Greedy
-        if index == 1:
-            algorithm = alg.cost_seeds_greedy
+        """
+        Questa variabile rappresenta la funzione submodulare selezionata tramite l'opzione -sf oppure --submodular--function (valori ammessi: 1, 2, 3).
+        La funzione entra in gioco solo nel caso dell'algoritmo Cost-Seeds-Greedy, ma viene ugualmente pre-impostato ad un valore di default.
+        """
+        selected_submodular_function_index: int = int(self.options.submodular_function) 
 
-        return algorithm
-    
-    
-    # Restituisce il seed set massimale S così come individuato dall'algoritmo in base al threshold e alla funzione di costo
-    def get_seed_set(self):
-        seed_set = self.algorithm(
+        spreading_algorithm = sa.SpreadingAlgorithm(
+            selected_algorithm_index = selected_algorithm_index,
+            selected_submodular_function_index = selected_submodular_function_index,
             graph = self.G,
             threshold = self.k,
-            cost_function = self.cost_function, 
-            submodular_function = sf.first, 
+            cost_function = self.cost_function,
             verbose = self.options.verbose
         )
 
-        return seed_set
+        return spreading_algorithm
     
 
 if __name__ == "__main__":
-    runner = Runner(options = setup_options())
+    spreading_process = SpreadingProcess(options = setup_options())
 
-    seed_set = runner.get_seed_set()
+    seed_set = spreading_process.spreading_algorithm.get_seed_set()
 
     print(seed_set)
