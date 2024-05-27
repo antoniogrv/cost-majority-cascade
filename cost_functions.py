@@ -1,56 +1,82 @@
 import math
 import random
 
-#Valori minimi e massimi per il range utilizzato dalla prima funzione di costo
-range_min = 1
-range_max = 10
+from networkx import Graph
 
-maxDegree = 0
+class CostFunctionFactory():
+    def __init__(self, index, graph, range_min, range_max, d_max, verbose = False):
+        self.G = graph
+        self.range_min = range_min
+        self.range_max = range_max
+        self.d_max = d_max
+        self.verbose = verbose
+        self.cost_map = self.create_cost_map()
 
-cost_map = {}
 
-isDmaxSet = False
-dmax = 0
+    def print_cost_map(self):
+        for node, cost in self.cost_map.items():
+            print(f"Nodo: {node}, Costo: {cost}")
+        
 
-def setDmax(G):
-    global dmax
-    dmax = max(dict(G.degree()).values())
+    def first(self, graph: Graph, v):
+        if isinstance(v, list):
+            costSum = 0
 
-#Questa funzione va invocata una sola volta, prima di ogni esperimento in cui la funzione di costo scelta è la prima funzione di costo
-def initialize_cost_map(G):
-    for node in list(G.nodes()):
-        cost_map[node] = random.randint(range_min, range_max)
+            for u in v:
+                costSum += self.cost_map[u]
+            return costSum
+        else:
+            return self.cost_map[v]
 
-def print_cost_map():
-    for node, cost in cost_map.items():
-        print(f"Nodo: {node}, Costo: {cost}")
+
+    def second(self, G: Graph, v):
+        if isinstance(v, list):
+            costSum = 0
+
+            for u in v:
+                costSum += math.ceil(G.degree(u)/  2)
+            return costSum
+        else:
+            return math.ceil(G.degree(v) / 2)
+
+
+    def third(self, G: Graph, v):
+        if isinstance(v, list):
+            costSum = 0
+
+            for u in v:
+                costSum += math.floor((G.degree(u) ** 2) / self.d_max)
+            return costSum
+        else:
+            return math.floor((G.degree(v) ** 2) / self.d_max)
+        
+
+    def create_cost_map(self):
+        cost_map = {}
+
+        for node in list(self.G.nodes()):
+            cost_map[node] = random.randint(
+                self.range_min, 
+                self.range_max
+            )
+
+        self.cost_map = cost_map
+        
+        if self.verbose:
+            self.print_cost_map()
+
+        return cost_map
     
+    
+    def get_function(self, index: int):
+        if index not in [1, 2, 3]:
+            raise IndexError("La funzione di costo indicata non è valida.")
 
-def first(G,v):
-    if isinstance(v, list):
+        if index == 1:
+            fn = self.first
+        elif index == 2:
+            fn = self.second
+        elif index == 3: # Custom Function Cost
+            fn = self.third
 
-        costSum = 0
-        for u in v:
-            costSum+=cost_map[u]
-        return costSum
-    else:
-        return cost_map[v]
-
-def second(G,v):
-    if isinstance(v, list):
-        costSum = 0
-        for u in v:
-            costSum+=math.ceil(G.degree(u)/2)
-        return costSum
-    else:
-        return math.ceil(G.degree(v)/2)
-
-def third(G,v):
-    if not isDmaxSet: setDmax(G)
-    if isinstance(v, list):
-        costSum = 0
-        for u in v:
-            costSum+=math.floor((G.degree(u)**2)/dmax)
-        return costSum
-    else:
-        return math.floor((G.degree(v)**2)/dmax)
+        return fn

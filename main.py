@@ -1,4 +1,5 @@
 import argparse
+import random
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -9,6 +10,7 @@ import network_loader as nl
 import default_config as config
 
 from networkx import Graph
+
 
 # Consultare il README per le possibili configurazioni dello script
 def setup_options():
@@ -30,6 +32,7 @@ def setup_options():
         print(f"Caricati gli archi da {args.edges}")
 
         return args
+
 
 class Runner():
     def __init__(self, options):
@@ -58,30 +61,30 @@ class Runner():
 
     # Per selezionare una funzione di costo, usare l'opzione -cf oppure --cost-function, es. -cf 1 (valori ammessi: 1, 2, 3)
     def setup_cost_function(self) -> callable:
-        choice = int(self.options.cost_function)
-        
-        if choice == 1:
-            cost_function = cf.first
+        index: int = int(self.options.cost_function) # Rappresenta la funzione di costo scelta (1, 2 o 3)
 
-            cf.initialize_cost_map(self.G)
-
-            if self.options.verbose:
-                cf.print_cost_map()
-        elif choice == 2:
-            cost_function = cf.second
+        cost_function_factory: cf.CostFunctionFactory = cf.CostFunctionFactory(
+            index = index,
+            graph = self.G,
+            range_min = config.DEFAULT_RANGE_MIN,
+            range_max = config.DEFAULT_RANGE_MAX,
+            d_max = max(dict(self.G.degree()).values()),
+            verbose = self.options.verbose
+        )
         
-        return cost_function
+        return cost_function_factory.get_function(index)
 
 
     # Per selezionare un algoritmo, usare l'opzione -a oppure --algorithm, es. -a 1 (valori ammessi: 1, 2, 3)
     def setup_algorithm(self) -> callable:
-        choice = int(self.options.algorithm)
+        index = int(self.options.algorithm) # Rappresenta l'algoritmo scelto (1, 2 o 3)
 
         # Cost-Seeds-Greedy
-        if choice == 1:
+        if index == 1:
             algorithm = alg.cost_seeds_greedy
 
         return algorithm
+    
     
     # Restituisce il seed set massimale S così come individuato dall'algoritmo in base al threshold e alla funzione di costo
     def get_seed_set(self):
