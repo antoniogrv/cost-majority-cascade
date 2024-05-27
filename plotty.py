@@ -17,7 +17,7 @@ from networkx import Graph
 from main import SpreadingProcess
 
 
-k_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+k_list = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 cost_functions = [1, 2, 3]
 submodular_functions = [1, 2, 3]
 algorithms = [1, 2, 3]
@@ -61,8 +61,8 @@ if __name__ == "__main__":
                     verbose=False,
                     save=False,
                     threshold=k,
-                    edges='networks/generated_networks/graph.EDGES',
-                    circles='networks/generated_networks/graph.CIRCLES',
+                    edges='networks/sample_networks/107.edges',
+                    circles='networks/sample_networks/107.circles',
                     cost_function=cost_function,
                     submodular_function=submodular_function,
                     algorithm=1
