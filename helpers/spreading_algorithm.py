@@ -1,5 +1,6 @@
 import algorithms.cost_seeds_greedy
 import algorithms.WTSS
+import algorithms.my_seeds
 import helpers.submodular_functions as sf
 
 from default_config import Algorithms
@@ -41,6 +42,12 @@ class SpreadingAlgorithm():
             )
         elif self.selected_algorithm_index == Algorithms.WTSS.value:
             seed_set = algorithms.WTSS.WTSS(
+                G = self.G,
+                k = self.threshold,
+                cost_function = self.cost_function
+            )
+        elif self.selected_algorithm_index == Algorithms.MY_SEEDS.value:
+            seed_set = algorithms.my_seeds.my_seeds(
                 G = self.G,
                 k = self.threshold,
                 cost_function = self.cost_function

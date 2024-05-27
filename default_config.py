@@ -19,4 +19,4 @@ DEFAULT_RESULTS_PATH = "results"
 class Algorithms(Enum):
     COST_SEEDS_GREEDY = 1
     WTSS = 2
-    CUSTOM = 3
+    MY_SEEDS = 3
