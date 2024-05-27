@@ -1,7 +1,7 @@
 from networkx import Graph
 
 
-def cost_seeds_greedy(graph: Graph, threshold: int, cost_function, submodular_function, verbose: bool):
+def cost_seeds_greedy(graph: Graph, threshold: int, cost_function: callable, submodular_function: callable, verbose: bool):
     Sd = []
     Sp = []
     step = 0
