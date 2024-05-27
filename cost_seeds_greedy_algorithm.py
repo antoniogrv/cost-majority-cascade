@@ -1,16 +1,22 @@
-def cost_seeds_greedy(G, k, cost_function, submodular_function, verbose):
+from networkx import Graph
+
+
+def cost_seeds_greedy(graph: Graph, threshold: int, cost_function, submodular_function, verbose: bool):
     Sd = []
     Sp = []
     step = 0
-    while cost_function(G,Sd)<=k:
+
+    while cost_function(graph, Sd) <= threshold:
         if verbose:
-            print("[COST_SEEDS_GREEDY - STEP", step, "] : Sp = ", Sp)
-            print("[COST_SEEDS_GREEDY - STEP", step, "] : Sd = ", Sd)
-            print("[COST_SEEDS_GREEDY - STEP", step, "] : c(Sd) = ",cost_function(G,Sd), " <= ", k, " ... proceeding")
-        u = argmaxselect(G, submodular_function, Sd, cost_function, verbose)
+            print(f"[COST_SEEDS_GREEDY - STEP {step}] : Sp = {Sp}")
+            print(f"[COST_SEEDS_GREEDY - STEP {step}] : Sd = {Sd}")
+            print(f"[COST_SEEDS_GREEDY - STEP {step}] : c(Sd) = {cost_function(graph, Sd)} <= {threshold} ... proceeding")
+        
+        u = argmaxselect(graph, submodular_function, Sd, cost_function, verbose)
         Sp = Sd.copy()
         Sd.append(u)
         step = step + 1
+
     return Sp
 
 def argmaxselect(G, submodular_function, Sd, cost_function, verbose):

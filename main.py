@@ -1,3 +1,4 @@
+import argparse
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -6,22 +7,42 @@ import cost_functions as cf
 import submodular_functions as sf
 import network_loader as nl 
 
-G = nl.read_network("generated_networks/graph.EDGES","generated_networks/graph.CIRCLES")
+from networkx import Graph
 
-# Disegno del grafo
-nx.draw(G, with_labels=True)
-plt.show()
+def setup_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-g', '--print_graph', action = 'store_true')
 
-#Questa funzione va chiamata solo nel caso in cui la funzione di costo scelta è la prima
+    return parser.parse_args()
+
+args: argparse.Namespace = setup_args()
+
+G: Graph = nl.read_network(
+    edges_file_path = "generated_networks/graph.EDGES",
+    circles_file_path = "generated_networks/graph.CIRCLES"
+)
+
+k: int = 6
+
+# Per stampare il grafo, usare l'opzione -g o --print_graph
+if args.print_graph:
+    nx.draw(graph = G, with_labels = True)
+    plt.show()
+
+# Questa funzione va chiamata solo nel caso in cui la funzione di costo scelta è la prima
 cf.initialize_cost_map(G)
 
 print("La mappa dei costi è stata inizializzata con successo!")
 
 cf.print_cost_map()
 
-k = 6
-
-result = alg.cost_seeds_greedy(G, k, cf.first, sf.first, verbose=True)
+result = alg.cost_seeds_greedy(
+    graph = G,
+    threshold = k, 
+    cost_function = cf.first, 
+    submodular_function = sf.first, 
+    verbose = False
+)
 
 print(result)
 

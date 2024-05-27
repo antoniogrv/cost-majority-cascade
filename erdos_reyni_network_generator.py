@@ -13,6 +13,7 @@ with open('generated_networks/graph.EDGES', 'w') as edges_file:
 
 # Assegna casualmente i nodi ai cerchi e salva queste informazioni nel file .CIRCLES
 circles = {}
+
 for node in G.nodes():
     circle_id = f"circle_{random.randint(1, 5)}"  # Assegna casualmente il nodo a uno dei 5 cerchi
     if circle_id not in circles:
