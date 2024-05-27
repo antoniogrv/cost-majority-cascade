@@ -1,5 +1,8 @@
 import algorithms.cost_seeds_greedy
+import algorithms.wtss
 import helpers.submodular_functions as sf
+
+from default_config import Algorithms
 
 class SpreadingAlgorithm():
     def __init__(self, selected_algorithm_index, selected_submodular_function_index, graph, threshold, cost_function, verbose):
@@ -28,13 +31,19 @@ class SpreadingAlgorithm():
 
 
     def get_seed_set(self):
-        if self.selected_algorithm_index == 1:
+        if self.selected_algorithm_index == Algorithms.COST_SEEDS_GREEDY.value:
             seed_set = algorithms.cost_seeds_greedy.cost_seeds_greedy(
                 graph = self.G,
                 threshold = self.threshold,
                 cost_function = self.cost_function, 
                 submodular_function = self.submodular_function, 
                 verbose = self.verbose
+            )
+        elif self.selected_algorithm_index == Algorithms.WTSS.value:
+            seed_set = algorithms.wtss.WTSS(
+                G = self.G,
+                k = self.threshold,
+                cost_function = self.cost_function
             )
         
         return seed_set

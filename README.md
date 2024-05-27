@@ -9,6 +9,10 @@ pip install -r requirements.txt
 # Esempio di utilizzo
 
 ```python
+python main.py [-h] [-g] [-v] [-k THRESHOLD] [-e EDGES] [-c CIRCLES] [-cf {1,2,3}] [-sf {1,2,3}] [-a {1,2,3}]
+```
+
+```python
 ### Esegue il runner con i parametri di default
 python main.py
 
@@ -26,6 +30,8 @@ python main.py -a=1 # Cost-Seeds-Greedy
 python main.py -a=2 # WTSS
 python main.py -a=3 # My-Seeds
 
-### Seleziona una particolare funzione di costo (1, 2, 3)
+### Seleziona specifiche funzioni di costo e funzioni submodulari (es. 1, 2, 3)
 python main.py -cf=1
+python main.py -sf=2
+python main.py -cf=1 -sf=3
 ```
