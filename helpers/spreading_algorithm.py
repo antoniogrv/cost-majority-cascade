@@ -40,7 +40,7 @@ class SpreadingAlgorithm():
                 verbose = False
             )
         elif self.selected_algorithm_index == Algorithms.WTSS.value:
-            seed_set = algorithms.wtss.WTSS(
+            seed_set = algorithms.WTSS.WTSS(
                 G = self.G,
                 k = self.threshold,
                 cost_function = self.cost_function

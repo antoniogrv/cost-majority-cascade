@@ -1,18 +1,30 @@
 from collections import Counter
+import math
 
 def assign_treshold(G):
     for node in G.nodes():
-        G.nodes[node]["t"] = G.degree(node)/2
+        G.nodes[node]["t"] = math.ceil(G.degree(node)/2)
 
 def costs(G, cost_function: callable):
     for node in G.nodes():
         G.nodes[node]["cost"] = cost_function(G,node)
+
+def print_costs(G):
+    for node in G.nodes():
+        print("Costo del nodo",node,":",G.nodes[node]["cost"])
+
+def print_tresholds(G):
+    for node in G.nodes():
+        print("Treshold del nodo",node,":",G.nodes[node]["t"])
 
 def WTSS(G,k, cost_function: callable):
     #assegno un valore di soglia ed un costo ai nodi del grafo
     G_copy = G.copy()
     assign_treshold(G_copy)
     costs(G_copy, cost_function)
+
+    print_costs(G_copy)
+    print_tresholds(G_copy)
 
     #inizialmente il seedset è vuoto
     seed_set = []
@@ -21,80 +33,56 @@ def WTSS(G,k, cost_function: callable):
 
     #G.degree(u) -> grado del nodo u
     
-    while len(G_copy.nodes) > 0:
+    sum = 0
+
+    while len(G_copy.nodes()) > 0:
+
+        first_case_activated = False
 
         for node in G_copy.nodes():
             if G_copy.nodes[node]["t"] == 0:
+                first_case_activated = True
                 to_delete = node
                 neighbors = list(G_copy.neighbors(node))
                 for neighbor in neighbors:
                     treshold = G_copy.nodes[neighbor]["t"]
                     G_copy.nodes[neighbor]["t"] = max(0,(treshold - 1))
                 G_copy.remove_node(to_delete)
-            
-        if G_copy.nodes:
-            for node in G_copy.nodes():
-                if G_copy.degree(node) < G_copy.nodes[node]["t"]:
-                    seed_set.add(node)
-                    to_delete = node
-                    neighbors = list(G_copy.neighbors(node))
-                    for neighbor in neighbors:
-                        treshold = G_copy.nodes[neighbor]["t"]
-                        G_copy.nodes[neighbor]["t"] -= 1
-                    G_copy.remove_node(to_delete)
-            if len(seed_set) == k : 
-                return seed_set
-            
-            for node in G_copy.nodes():
-                cost = G_copy.nodes[node]["cost"]
-                treshold = G_copy.nodes[node]["t"]
-                degree = G_copy.degree(node)
-                third_case_node_selection[node] = ((cost * treshold) / (degree * (degree + 1))) if (degree != 0) else 0
-                to_delete = max(third_case_node_selection, key=third_case_node_selection.get)
-                G_copy.remove_node(to_delete)
+                break
+        
+        if first_case_activated:
+            continue
 
-    '''while len(seed_set) < k :
+        second_case_activated = False
 
         for node in G_copy.nodes():
-            #Caso 1 -> Se la soglia del nodo è 0, allora a tutti i vicini imposta la soglia come 
-            #il valore massimo tra 0 e la soglia meno 1
-            if G_copy.nodes[node]["t"] == 0:
-                to_delete = node
-                neighbors = list(G_copy.neighbors(node))
-                for neighbor in neighbors:
-                    treshold = G_copy.nodes[neighbor]["t"]
-                    G_copy.nodes[neighbor]["t"] = max(0,(treshold - 1))
-
-            #Caso 2 -> Se il grado del nodo è minore della sua soglia, allora aggiungo il nodo al seedset
-            # e diminuisco la soglia del vicinato di 1
-            elif G_copy.degree(node) < G_copy.nodes[node]["t"]:
-                seed_set.add(node)
+            if G_copy.degree(node) < G_copy.nodes[node]["t"]:
+                second_case_activated = True
+                seed_set.append(node)
+                sum += G_copy.nodes[node]["cost"]
                 to_delete = node
                 neighbors = list(G_copy.neighbors(node))
                 for neighbor in neighbors:
                     treshold = G_copy.nodes[neighbor]["t"]
                     G_copy.nodes[neighbor]["t"] -= 1
-                
-                #Caso 3 -> Prendo il nodo con il maggior rapporto descritto da WTSS
-                else: 
-                    for node in G_copy.nodes():
-                        cost = G_copy.nodes[node]["cost"]
-                        treshold = G_copy.nodes[node]["t"]
-                        degree = G_copy.degree(node)
-                        third_case_node_selection[node] = ((cost * treshold) / (degree * (degree + 1))) if (degree != 0) else 0
-                    
-                    if len(third_case_node_selection) > 0:
-                        # Prelevo il nodo con massimo rapporto calcolato
-                        to_delete = max(third_case_node_selection, key=third_case_node_selection.get)
+                G_copy.remove_node(to_delete)
+                break
+        
+        if second_case_activated: 
+            continue
 
-        if to_delete is not None:
-            G_copy.remove_node(to_delete)
+        third_case_node_selection = Counter()
+        for node in G_copy.nodes():
+            cost = G_copy.nodes[node]["cost"]
+            threshold = G_copy.nodes[node]["t"]
+            degree = G_copy.degree(node)
+            third_case_node_selection[node] = ((cost * threshold) / (degree * (degree + 1)))
+        to_delete = max(third_case_node_selection, key=third_case_node_selection.get)
+        G_copy.remove_node(to_delete)
 
-        if not G_copy.nodes:
-            print("Grafo vuoto, esco dal loop")
-            break
-
-    return seed_set'''
+        if sum > k:
+            return seed_set[:-1]
+    return seed_set
 
 
 
