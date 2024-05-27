@@ -43,7 +43,7 @@ class SpreadingProcess():
         self.options: argparse.Namespace = options
 
         self.G: Graph = self.setup_graph()
-        self.k: int = self.options.threshold
+        self.k: int = int(self.options.threshold)
         self.cost_function: callable = self.setup_cost_function()
         self.spreading_algorithm: SpreadingAlgorithm = self.setup_spreading_algorithm()
 

@@ -1,3 +1,4 @@
+import math
 from networkx import Graph
 import copy
 
@@ -14,11 +15,14 @@ class CascadeProcess():
         influencing: list = copy.deepcopy(self.seed_set)
     
         while len(influencing) != len(prev_influenced):
+            if self.verbose:
+                print("\n##### [i - Cascade] Iterazione successiva #####\n")
+
             prev_influenced: list = copy.deepcopy(influencing)
 
-            for node in self.graph.nodes():
+            for node in set(self.graph.nodes()).difference(prev_influenced):
                 intersection = len(set(self.graph.neighbors(node)).intersection(prev_influenced))
-                degree_threshold = (self.graph.degree(node) / 2)
+                degree_threshold = math.ceil(self.graph.degree(node) / 2)
 
                 if self.verbose:
                     print(f"[i - {node}] Considero il nodo {node}, con {self.graph.degree(node)} vicini")
