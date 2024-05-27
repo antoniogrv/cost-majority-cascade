@@ -119,7 +119,7 @@ def save_results(file_path, results, graph, seed_set, influenced_nodes):
     for node in graph.nodes():
         color_map.append('gray')
 
-    nx.draw(G = graph, with_labels = True, pos = nx.spring_layout(graph), node_color = color_map)
+    nx.draw(G = graph, with_labels = False, pos = nx.spring_layout(graph, scale = 3), node_color = color_map, node_size = 10)
     plt.savefig(f"{file_path}/pre-influencing.png", format = "PNG")
     plt.clf()
 
@@ -134,7 +134,7 @@ def save_results(file_path, results, graph, seed_set, influenced_nodes):
         else:
             color_map.append('gray')
 
-    nx.draw(G = graph, with_labels = True, pos = nx.spring_layout(graph), node_color = color_map)
+    nx.draw(G = graph, with_labels = False, pos = nx.spring_layout(graph, scale = 3), node_color = color_map, node_size = 10)
     plt.savefig(f"{file_path}/influencing.png", format = "PNG")
     plt.clf()
 
@@ -151,7 +151,7 @@ def save_results(file_path, results, graph, seed_set, influenced_nodes):
         else:
             color_map.append('gray')
 
-    nx.draw(G = graph, with_labels = True, pos=nx.spring_layout(graph), node_color = color_map)
+    nx.draw(G = graph, with_labels = False, pos = nx.spring_layout(graph, scale = 3), node_color = color_map, node_size = 10)
     plt.savefig(f"{file_path}/influencing_and_influenced.png", format = "PNG")
     plt.clf()
 

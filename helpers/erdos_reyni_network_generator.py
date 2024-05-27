@@ -1,8 +1,8 @@
 import networkx as nx
 import random
 
-n = 30
-p = 0.1
+n = 100
+p = 0.05
 
 G = nx.erdos_renyi_graph(n, p)
 
