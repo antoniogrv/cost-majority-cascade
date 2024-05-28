@@ -26,7 +26,7 @@ def my_seeds(G: Graph, k: int, cost_function: callable) -> list:
         best_score = 0
 
         for node in remaining_graph.nodes():
-            score = networkx.clustering(G, node) * G.degree(node)
+            score = networkx.clustering(G, node) * G.degree(node) / cost_function(G, node)
 
             if score > best_score:
                 best_score = score

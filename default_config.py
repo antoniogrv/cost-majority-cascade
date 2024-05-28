@@ -2,10 +2,10 @@ from enum import Enum
 
 # Configurazioni di default, sovrascrivibili tramite CLI
 
-DEFAULT_THRESHOLD = 6
+DEFAULT_THRESHOLD = 160
 
-DEFAULT_EDGES = 'networks/generated_networks/graph.EDGES'
-DEFAULT_CIRCLES = 'networks/generated_networks/graph.CIRCLES'
+DEFAULT_EDGES = 'networks/sample_networks/348.edges'
+DEFAULT_CIRCLES = 'networks/sample_networks/348.circles'
 
 DEFAULT_RANGE_MIN = 1
 DEFAULT_RANGE_MAX = 10
