@@ -1,0 +1,846 @@
+\section{Implementazione}
+\lhead{Implementazione} % section header
+La rete scelta è stata implementata in Python sfruttando NetworkX, un package per la creazione e manipolazione delle dinamiche e delle funzioni di reti complesse.
+
+In particolare, ogni algoritmo implementato sfrutta i seguenti import:
+
+\begin{code}
+\begin{minted}{python}
+import math
+import networkx
+from networkx import Graph
+from collections import Counter
+\end{minted}
+\end{code}
+
+\subsection{Algoritmo Costs-Seeds-Greedy}
+
+L'idea alla base di questo algoritmo è quello di andare ad inserire nel seedset il nodo che permette di massimizzare l'influenza ma non solo, infatti è di cruciale importanza anche il costo del nodo stesso poiché, siccome si vuole un seedset massimale il nodo scelto deve sia massimizzare l'influenza ma allo stesso tempo costare poco.
+Il nodo selezionato è quindi quello che ad ogni iterazione finché $c(S) < k$ va a massimizzare il rapporto sequente \ref{cost_seeds_greedy}: 
+\begin{equation}
+\frac{\Delta_v f_i\left(S_d\right)}{c(u)},
+\label{cost_seeds_greedy}
+\end{equation}
+dove $\Delta_if_i(S_d) = f(S_d \cup {u} - f(S_d))$, mentre $c(u)$ è il costo associato al nodo. Quindi il rapporto risulta essere inversamente proporzionale al costo stesso.
+
+L'algoritmo Costs-Seeds-Greedy è stato implementato con tre diverse funzioni submodulari $f_i$:
+\begin{itemize}
+    \item \textbf{$f_1(S)$}: $\sum_{v \in V} \min \left\{|N(v) \cap S|,\left\lceil\frac{d(v)}{2}\right\rceil\right\}$
+    \item \textbf{$f_2(S)$}: $\sum_{v \in V} \sum_{i=1}^{|N(v) \cap S|} \max \left\{\left\lceil\frac{d(v)}{2}\right\rceil-i+1,0\right\}$
+    \item \textbf{$f_3(S)$}: $\sum_{v \in V} \sum_{i=1}^{|N(v) \cap S|} \max \left\{\frac{\left\lceil\frac{d(v)}{2}\right\rceil-i+1}{d(v)-i+1}, 0\right\}$
+\end{itemize}
+L'implementazione relativa viene mostrata nella sezione successiva con le funzioni \textit{first}, \textit{secondo} e \textit{third}.
+
+\begin{code}
+\begin{minted}{python}
+def cost_seeds_greedy(graph: Graph, threshold: int, cost_function: callable, submodular_function: callable, verbose: bool):
+    Sd = []
+    Sp = []
+    step = 0
+
+    while cost_function(graph, Sd) <= threshold:
+        u = argmaxselect(graph, submodular_function, Sd, cost_function, verbose)
+        Sp = Sd.copy()
+        Sd.append(u)
+        step = step + 1
+
+    return Sp
+\end{minted}
+\end{code}
+
+\begin{code}
+\begin{minted}{python}
+def argmaxselect(G, submodular_function, Sd, cost_function, verbose):
+    tempSet = list(G.nodes())
+    if verbose:
+        print("\t[ARGMAXSELECT] : V = ", tempSet)
+        print("\t[ARGMAXSELECT] : Sd = ", Sd)
+    set = tempSet.copy()
+    for u in tempSet:
+        if u in Sd:
+            set.remove(u)
+    if verbose:
+        print("\t[ARGMAXSELECT] : V-Sd = ", set)
+    if not set:
+        if verbose:
+            print("\t[ARGMAXSELECT] : V-Sd is empty!")
+        return None  # Restituisci None se set è vuoto
+
+    bestNode = set[0]
+    bestValue = 0.0
+    for v in set:
+        if verbose:
+            print("\n\t[ARGMAXSELECT] : f(Sd U ",v,") = ", submodular_function(G, Sd + [v]))
+            print("\t[ARGMAXSELECT] : f(Sd) = ", submodular_function(G, Sd))
+            print("\t[ARGMAXSELECT] : c(",v,") = ", cost_function(G,v))
+
+        value = (submodular_function(G, Sd + [v]) - submodular_function(G, Sd)) / cost_function(G,v)
+
+        if verbose:
+            print("\t[ARGMAXSELECT] : value = ", value)
+        if value>bestValue:
+            bestValue = value
+            bestNode = v
+    return bestNode
+\end{minted}
+\end{code}
+
+\subsubsection{Funzioni submodulari}
+
+Il primo algoritmo sfrutta delle funzioni submodulari. Vengono presentate tre possibili funzioni submodulari, di cui l'ultima di nostra ideazione.
+
+\begin{code}
+\begin{minted}{python}
+def first(G, s):
+    sum = 0
+    for v in list(G.nodes()):
+        first_term = len(list(set(list(G.neighbors(v))) & set(s)))
+        second_term = math.ceil(G.degree(v)/2)
+        sum += min(first_term,second_term)
+    return sum
+\end{minted}
+\end{code}
+
+\begin{code}
+\begin{minted}{python}
+def second(G, s):
+    sum = 0
+    for v in list(G.nodes()):
+        for i in range(1, len(list(set(list(G.neighbors(v))) & set(s))) + 1):
+            first_term = math.ceil(G.degree(v)/2) - i + 1
+            second_term = 0
+            sum += max(first_term,second_term)
+    return sum
+\end{minted}
+\end{code}
+
+\begin{code}
+\begin{minted}{python}
+def third(G, s):
+    sum = 0
+    for v in list(G.nodes()):
+        for i in range(1, len(list(set(list(G.neighbors(v))) & set(s))) + 1):
+            first_term = (math.ceil(G.degree(v)/2) - i + 1)/(G.degree(v) - i + 1)
+            second_term = 0
+            sum += max(first_term,second_term)
+    return sum
+\end{minted}
+\end{code}
+
+\subsection{Algoritmo Weighted Target Set Selection (WTSS)}
+Il WTSS è uno dei tre algoritmi utilizzati per selezionare il seed set che mi permetta di influenzare la maggior parte dei nodi nella reti. La condizione è che il $ c(S) < k $, cioè che la somma dei costi dei nodi nel \textit{seedset} sia inferiore al \textit{budget} fissato. 
+
+\begin{code}
+\begin{minted}{python}
+def WTSS(G,k, cost_function: callable):
+    G_copy = G.copy()
+    assign_treshold(G_copy)
+    costs(G_copy, cost_function)
+
+    seed_set = []
+    to_delete = None
+    third_case_node_selection = Counter()
+    
+    sum = 0
+
+    while len(G_copy.nodes()) > 0:
+
+        first_case_activated = False
+
+        for node in G_copy.nodes():
+            if G_copy.nodes[node]["t"] == 0:
+                first_case_activated = True
+                to_delete = node
+                neighbors = list(G_copy.neighbors(node))
+                for neighbor in neighbors:
+                    treshold = G_copy.nodes[neighbor]["t"]
+                    G_copy.nodes[neighbor]["t"] = max(0,(treshold - 1))
+                G_copy.remove_node(to_delete)
+                break
+        
+        if first_case_activated:
+            continue
+
+        second_case_activated = False
+
+        for node in G_copy.nodes():
+            if G_copy.degree(node) < G_copy.nodes[node]["t"]:
+                second_case_activated = True
+                seed_set.append(node)
+                sum += G_copy.nodes[node]["cost"]
+                to_delete = node
+                neighbors = list(G_copy.neighbors(node))
+                for neighbor in neighbors:
+                    treshold = G_copy.nodes[neighbor]["t"]
+                    G_copy.nodes[neighbor]["t"] -= 1
+                G_copy.remove_node(to_delete)
+                break
+        
+        if second_case_activated: 
+            continue
+
+        third_case_node_selection = Counter()
+        for node in G_copy.nodes():
+            cost = G_copy.nodes[node]["cost"]
+            threshold = G_copy.nodes[node]["t"]
+            degree = G_copy.degree(node)
+            third_case_node_selection[node] = ((cost * threshold) / (degree * (degree + 1)))
+        to_delete = max(third_case_node_selection, key=third_case_node_selection.get)
+        G_copy.remove_node(to_delete)
+
+        if sum > k:
+            return seed_set[:-1]
+    return seed_set
+\end{minted}
+\end{code}
+
+\begin{code}
+\begin{minted}{python}
+def assign_treshold(G):
+    for node in G.nodes():
+        G.nodes[node]["t"] = math.ceil(G.degree(node)/2)
+
+def costs(G, cost_function: callable):
+    for node in G.nodes():
+        G.nodes[node]["cost"] = cost_function(G,node)
+
+def print_costs(G):
+    for node in G.nodes():
+        print("Costo del nodo",node,":",G.nodes[node]["cost"])
+
+def print_tresholds(G):
+    for node in G.nodes():
+        print("Treshold del nodo",node,":",G.nodes[node]["t"])
+\end{minted}
+\end{code}
+
+Si inizia con il fare una copia del grafo considerato, per far si che le modifiche apportate non vadano a modificare il grafo originario, evitando cosi di dover caricare il grafo ad ogni esecuzione di WTSS. Sul grafo considerato andiamo poi a settare il threshold ed il costo associato ad ogni nodo. Il processo di riempimento del seedset è iterativo, e si continua finché $c(S) < k$.  Chiaramente anche il caso in cui non ci sono più nodi nel grado reppresenta una condizione di uscita, seppur poco probabile.
+Ciò che viene fatto dall'algoritmo WTSS è riassumibile nei seguenti passi:
+\begin{itemize}
+    \item \textbf{Passo 1}: Se esiste un nodo $v$ nel nel grafo la cui soglia corrente $k(v) = 0$ allora lo seleziono come nodo da eliminare e per tutti i vicini $u$ di $v$ vado ad impostare la soglia come $k(u) = max(0, k(u)-1)$. Se non trovo un nodo che soddifa questa condizione vado al passo 2.
+    \item \textbf{Passo 2}: Se esiste un nodo $v$ nel nel grafo il cui grado corrente è minore della soglia corrente $\delta(v) < k(v)$ allora lo mettiamo nel seedset poiché rappresenta un nodo che non può essere attivato. A tutti i vicini $u$ di $v$ andiamo a diminuire la soglia di 1. Se non trovo un nodo che soddisfo questa condizione vado al passo 3.
+    \item \textbf{Passo 3}: Se arrivo al passo 3 vado a selezionare il nodo che massimizza il rapporto definito nell'equazione \ref{arg_max}: 
+    \begin{equation}
+         v=\operatorname{argmax}_{u \in U}\left\{\frac{c(u) k(u)}{\delta(u)(\delta(u)+1)}\right\},
+    \label{arg_max}
+    \end{equation}
+    dove $c(u)$, $k(u)$, $\delta(u)$ sono ripettivamente il costo, la soglia ed il grado associato al nodo $u$. L'idea è quella di andare ad eliminare il nodo che ha meno probabilità di attivarsi. Finito il passo 3, si ritorna al passo 1 finché una delle condizioni di uscita, sopraccitate viene raggiunta.
+\end{itemize}
+
+
+
+\subsection{Algoritmo My-Seeds}
+Il seguente algoritmo cerca di selezionare iterativamente il nodo che contribuirà maggiormente all'aumento della copertura totale della rete. Come nel WTSS anche qui andiamo a lavorare su una copia del grafo per le medesime ragione. In questo caso però il nodo che viene selezionato da mettere nel seedset è quello che ha uno \textit{score} maggiore, dove lo score di un nodo $v$ è definito come il prodotto tra il coefficente di clustering del nodo e il grado dello stesso rapportato al costo del nodo. Quindi in linea generale, si va a stimare l'importanza del nodo sfruttando il coefficente di clustering, ma come detto in precedenza anche il costo del nodo è determinante nella scelta poiché si vuole un seedset massimale. Il coefficente di clustering è una misura che quantifica quanto i vicini di un nodo in una rete sono collegati tra loro. Esso viene utilizzato per valutare quanto una rete sociale sia "clusterizzata" o formi gruppi densamente interconnessi. Esistono diverse definizioni di coefficienti di clustering, ma una delle più comuni riguarda il coefficiente di clustering locale (o coefficiente di clustering di un nodo), che è calcolato come il rapporto tra il numero di collegamenti effettivi tra i vicini di un nodo e il numero massimo possibile di collegamenti tra di loro, quindi è un rapporto tra i casi favorevoli e quelli possibili. Ciò che è stato appena descritto può essere sintetizzato dall'equazione \ref{clustering}: 
+\begin{equation}
+C_i=\frac{L_i}{\binom{k_i}{2}}=\frac{2 L_i}{k_i\left(k_i-1\right)},
+\label{clustering}
+\end{equation}
+dove $C_i$ rappresenta il coefficiente di clustering del nodo i, $L_i$ corrisponde al numero di edges esistenti tra i vicini del nodo i e $k_i$ equivale al grado del nodo i.
+
+\begin{code}
+\begin{minted}{python}
+def my_seeds(G: Graph, k: int, cost_function: callable) -> list:
+    costs(G, cost_function)
+
+    sum_costs = 0
+    remaining_graph = G.copy()
+    seed_set = []
+
+    while sum_costs <= k:
+        selected_node = None
+        best_score = 0
+
+        for node in remaining_graph.nodes():
+            score = networkx.clustering(G, node) * G.degree(node) / remaining_graph.nodes[node]["cost"]
+
+            if score > best_score:
+                best_score = score
+                selected_node = node
+
+        if selected_node == None:
+            break
+
+        sum_costs += remaining_graph.nodes[node]["cost"]
+        seed_set.append(selected_node)
+        remaining_graph.remove_node(selected_node)
+        
+    return seed_set 
+\end{minted}
+\end{code}
+
+\subsection{Classe SpreadingAlgorithm}
+
+Viene definita la classe \mintinline{python}{SpreadingAlgorithm}, la quale si occupa di gestire l'algoritmo di diffusione all'interno del grafo. Durante l'inizializzazione, vengono passati diversi parametri fondamentali, tra cui l'indice dell'algoritmo selezionato, l'indice della funzione submodulare selezionata, il grafo stesso, la soglia di diffusione, la funzione di costo e un flag per abilitare la modalità verbosa.
+
+Una volta inizializzata, la classe configura la funzione submodulare in base all'indice specificato, qualora venga scelto il primo algoritmo fra i tre disponbiili. Questo viene fatto attraverso il metodo \mintinline{python}{setup_submodular_function}, che associa l'indice selezionato a una specifica funzione submodulare definita nel modulo \mintinline{python}{helpers.submodular_functions}.
+
+Successivamente, il metodo \mintinline{python}{get_seed_set} determina il seed set ottimale in base all'algoritmo selezionato e alla funzione di costo. Se l'algoritmo è \mintinline{python}{COST_SEEDS_GREEDY}, viene invocata la funzione \mintinline{python}{cost_seeds_greedy} del modulo \mintinline{python}{algorithms.cost_seeds_greedy}, passando il grafo, la soglia di diffusione, la funzione di costo e la funzione submodulare. Altrimenti, se l'algoritmo è \mintinline{python}{WTSS} o \mintinline{python}{MY_SEEDS}, vengono chiamate le rispettive funzioni \mintinline{python}{WTSS} o \mintinline{python}{my_seeds} dei moduli \mintinline{python}{algorithms.WTSS} e \mintinline{python}{algorithms.my_seeds}. Infine, il seed set ottenuto viene restituito.
+
+\begin{code}
+\begin{minted}{python}
+import algorithms.cost_seeds_greedy
+import algorithms.WTSS
+import algorithms.my_seeds
+import helpers.submodular_functions as sf
+
+from default_config import Algorithms
+
+class SpreadingAlgorithm():
+    def __init__(self, selected_algorithm_index, selected_submodular_function_index, graph, threshold, cost_function, verbose):
+        self.selected_algorithm_index = selected_algorithm_index
+        self.selected_submodular_function_index = selected_submodular_function_index
+
+        self.verbose = verbose
+
+        self.G = graph
+        self.threshold = threshold
+        self.cost_function = cost_function
+        self.submodular_function = self.setup_submodular_function()
+
+
+    def setup_submodular_function(self):
+        if self.selected_submodular_function_index == 1:
+            submodular_function = sf.first
+        elif self.selected_submodular_function_index == 2:
+            submodular_function = sf.second
+        elif self.selected_submodular_function_index == 3:
+            submodular_function = sf.third
+        else:
+            submodular_function = None
+
+        return submodular_function
+
+
+    def get_seed_set(self):
+        if self.selected_algorithm_index == Algorithms.COST_SEEDS_GREEDY.value:
+            seed_set = algorithms.cost_seeds_greedy.cost_seeds_greedy(
+                graph = self.G,
+                threshold = self.threshold,
+                cost_function = self.cost_function, 
+                submodular_function = self.submodular_function, 
+                verbose = self.verbose
+            )
+        elif self.selected_algorithm_index == Algorithms.WTSS.value:
+            seed_set = algorithms.WTSS.WTSS(
+                G = self.G,
+                k = self.threshold,
+                cost_function = self.cost_function
+            )
+        elif self.selected_algorithm_index == Algorithms.MY_SEEDS.value:
+            seed_set = algorithms.my_seeds.my_seeds(
+                G = self.G,
+                k = self.threshold,
+                cost_function = self.cost_function
+            )
+        
+        return seed_set
+\end{minted}
+\end{code}
+
+\begin{code}
+\begin{minted}{python}
+def costs(G: Graph, cost_function: callable) -> None:
+    for node in G.nodes():
+        G.nodes[node]["cost"] = cost_function(G,node)
+
+
+def total_cost(G: Graph) -> int:
+    total_cost = 0
+    
+    for node in G.nodes():
+        total_cost += node["cost"]
+\end{minted}
+\end{code}
+
+\subsection{Funzioni di costo e classe CostFunctionFactory}
+
+Le funzioni \mintinline{python}{first}, \mintinline{python}{second} e \mintinline{python}{third} sono definite per calcolare i costi associati ai nodi o ai sottoinsiemi di nodi all'interno del grafo. Queste funzioni vengono utilizzate all'interno del primo step (individuazione seed set) del processo di diffusione per determinare il costo di selezionare determinati nodi come parte del seed set.
+
+La funzione \mintinline{python}{first} calcola il costo sommando i valori associati ai nodi in un certo vettore casuale ("cost map"). La funzione \mintinline{python}{second} utilizza il grado dei nodi nel grafo per calcolare il costo, utilizzando la funzione \mintinline{python}{math.ceil} per arrotondare verso l'alto il risultato. Infine, la funzione \mintinline{python}{third} calcola il costo basato sul quadrato del grado dei nodi nel grafo, normalizzato rispetto al massimo grado presente nel grafo.
+
+\begin{code}
+\begin{minted}{python}
+def first(self, graph: Graph, v):
+        if isinstance(v, list):
+            costSum = 0
+
+            for u in v:
+                costSum += self.cost_map[u]
+            return costSum
+        else:
+            return self.cost_map[v]
+\end{minted}
+\end{code}
+
+\begin{code}
+\begin{minted}{python}
+def second(self, G: Graph, v):
+        if isinstance(v, list):
+            costSum = 0
+
+            for u in v:
+                costSum += math.ceil(G.degree(u) / 2)
+            return costSum
+        else:
+            return math.ceil(G.degree(v) / 2)
+\end{minted}
+\end{code}
+
+\begin{code}
+\begin{minted}{python}
+def third(self, G: Graph, v):
+        if isinstance(v, list):
+            costSum = 0
+
+            for u in v:
+                costSum += math.ceil((G.degree(u) ** 2) / self.d_max)
+            return costSum
+        else:
+            return math.ceil((G.degree(v) ** 2) / self.d_max)
+\end{minted}
+\end{code}
+
+La classe \mintinline{python}{CostFunctionFactory} è progettata per generare funzioni di costo utilizzate nel processo di diffusione all'interno di un grafo, in maniera programmatica. Durante l'inizializzazione, vengono passati diversi parametri essenziali, tra cui l'indice dell'algoritmo selezionato, il grafo stesso, il range minimo e massimo dei costi (relativi alla prima funzione di costo, che prevede una cost map casuale), il grado massimo del grafo e un flag per abilitare la modalità verbosa.
+
+Il metodo \mintinline{python}{get_function} della classe determina la funzione di costo appropriata in base all'indice dell'algoritmo selezionato. Se l'indice non è compreso tra 1 e 3, viene sollevata un'eccezione. Altrimenti, l'indice viene utilizzato per associare il giusto metodo di calcolo del costo (\mintinline{python}{first}, \mintinline{python}{second} o \mintinline{python}{third}). Infine, la funzione corrispondente viene restituita per essere utilizzata nel processo di diffusione.
+
+\begin{code}
+\begin{minted}{python}
+class CostFunctionFactory():
+    def __init__(self, selected_algorithm_index, graph, range_min, range_max, d_max, verbose = False):
+        self.selected_algorithm_index = selected_algorithm_index
+
+        self.G = graph
+        self.range_min = range_min
+        self.range_max = range_max
+        self.d_max = d_max
+
+        self.verbose = verbose
+
+        self.cost_map = self.create_cost_map()
+        
+
+    def get_function(self):
+        if self.selected_algorithm_index not in [1, 2, 3]:
+            raise IndexError("La funzione di costo indicata non è valida.")
+
+        if self.selected_algorithm_index == 1:
+            fn = self.first
+        elif self.selected_algorithm_index == 2:
+            fn = self.second
+        elif self.selected_algorithm_index == 3:
+            fn = self.third
+
+        return fn
+\end{minted}
+\end{code}
+
+\subsection{Processo di diffusione e classe CascadeProcess}
+
+La classe \mintinline{python}{CascadeProcess} è progettata per simulare il processo di diffusione all'interno di un grafo di rete sociale partendo da un insieme di nodi iniziali, noto come seed set. Durante l'inizializzazione, vengono passati il grafo, il seed set e un flag per abilitare la modalità verbosa.
+
+Il metodo \mintinline{python}{get_influenced_nodes} esegue la simulazione del processo di diffusione. Viene utilizzato un approccio iterativo, in cui si aggiungono nodi all'insieme influenzato finché non si raggiunge la stabilità, cioè finché l'insieme influenzato non si modifica più in una nuova iterazione. All'interno del ciclo while, vengono confrontati gli insiemi di nodi influenzati nelle iterazioni precedente e attuale per determinare se sono stati influenzati nuovi nodi. Questo processo continua finché non viene raggiunta la stabilità dell'insieme influenzato, e infine viene restituito l'insieme completo dei nodi influenzati. 
+
+\begin{code}
+\begin{minted}{python}
+class CascadeProcess():
+    def __init__(self, graph: Graph, seed_set: list, verbose: bool) -> None:
+        self.graph: Graph = graph
+        self.seed_set: list = seed_set
+        self.verbose: bool = verbose
+
+
+    def get_influenced_nodes(self) -> list:
+        prev_influenced: list = []
+        influencing: list = copy.deepcopy(self.seed_set)
+    
+        while len(influencing) != len(prev_influenced):
+
+            prev_influenced: list = copy.deepcopy(influencing)
+            casted_prev_influenced = [str(node) for node in prev_influenced]
+
+            for node in self.graph.nodes():
+                if node in casted_prev_influenced:
+                    continue
+
+                intersection = len([x for x in casted_prev_influenced if x in list(self.graph.neighbors(node))])
+
+                degree_threshold = math.ceil(self.graph.degree(node) / 2)
+
+                if intersection >= degree_threshold:
+                    influencing.append(int(node))
+        
+        return influencing
+\end{minted}
+\end{code}
+
+\subsection{Caricamento della rete e classe NetworkLoader}
+
+La funzione \mintinline{python}{read_network} è progettata per leggere e creare un grafo da due file di testo, uno contenente gli archi (\texttt{.EDGES}) e l'altro contenente i nodi (\texttt{.CIRCLES}). All'interno di questa funzione, sono definite tre sotto-funzioni: \mintinline{python}{read_edges}, \mintinline{python}{read_circles} e \mintinline{python}{create_graph}. La prima legge gli archi dal file \texttt{.EDGES}, la seconda legge i cerchi dal file \texttt{.CIRCLES}, e la terza crea il grafo incorporando gli archi e associando i cerchi come attributi dei nodi. Una volta letti i file e creato il grafo, la funzione restituisce il grafo stesso.
+
+La funzione \mintinline{python}{main} costituisce l'entry point del programma. All'interno di questa funzione, vengono definiti i percorsi ai file \texttt{.EDGES} e \texttt{.CIRCLES}, e successivamente viene chiamata la funzione \mintinline{python}{read_network} per leggere il network dal file e ottenere il grafo. Viene quindi stampato un riepilogo delle informazioni del grafo utilizzando \mintinline{python}{nx.info}, e infine il grafo viene visualizzato utilizzando \mintinline{python}{nx.draw}. Se lo script viene eseguito direttamente, la funzione \mintinline{python}{main} viene chiamata per eseguire il programma.
+
+\begin{code}
+\begin{minted}{python}
+def read_network(edges_file_path, circles_file_path):
+    # Funzione per leggere i file .EDGES
+    def read_edges(file_path):
+        edges = []
+        with open(file_path, 'r') as file:
+            for line in file:
+                nodes = line.strip().split()
+                if len(nodes) == 2:
+                    edges.append((nodes[0], nodes[1]))
+        return edges
+
+    # Funzione per leggere i file .CIRCLES
+    def read_circles(file_path):
+        circles = {}
+        with open(file_path, 'r') as file:
+            for line in file:
+                parts = line.strip().split()
+                if len(parts) > 1:
+                    circle_id = parts[0]
+                    members = parts[1:]
+                    circles[circle_id] = members
+        return circles
+
+    # Funzione per creare il grafo
+    def create_graph(edges, circles):
+        G = nx.Graph()
+
+        # Aggiungi gli archi al grafo
+        G.add_edges_from(edges)
+
+        # Aggiungi i cerchi come attributi dei nodi
+        for circle_id, members in circles.items():
+            for member in members:
+                if member in G.nodes:
+                    if 'circles' not in G.nodes[member]:
+                        G.nodes[member]['circles'] = []
+                    G.nodes[member]['circles'].append(circle_id)
+
+        return G
+
+    # Leggi i file
+    edges = read_edges(edges_file_path)
+    circles = read_circles(circles_file_path)
+
+    # Crea il grafo
+    G = create_graph(edges, circles)
+
+    return G
+
+def main():
+    # Percorsi ai file .EDGES e .CIRCLES
+    edges_file_path = 'sample_networks/0.edges'
+    circles_file_path = 'sample_networks/0.circles'
+
+    # Leggi il network
+    G = read_network(edges_file_path, circles_file_path)
+
+    # Stampa informazioni sul grafo
+    print(nx.info(G))
+
+    # Disegna il grafo
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, with_labels=True)
+    plt.show()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\end{code}
+
+\subsection{Networking Mocking con Erdos-Reyni}
+
+Il codice fornito genera un grafo casuale utilizzando il modello di Erdős-Rényi con una probabilità $ p $ di collegamento tra i nodi. Il numero totale di nodi nel grafo è $ n $. Il grafo viene quindi salvato in due file di testo: uno contenente gli archi del grafo con estensione \texttt{.EDGES}, e l'altro contenente i nodi con estensione \texttt{.CIRCLES}.
+
+Nel primo passaggio, viene creato il file \texttt{.EDGES} dove ogni riga rappresenta un arco nel grafo, indicando i nodi connessi. Nel secondo passaggio, vengono generati casualmente dei cluster e assegnati i nodi ad essi. I nodi vengono distribuiti casualmente tra cinque cluster, e queste informazioni vengono salvate nel file \texttt{.CIRCLES}, dove ogni riga rappresenta un cluster e i nodi ad esso assegnati. Questi due file sono utilizzati successivamente per la costruzione del grafo all'interno del programma.
+
+\begin{code}
+\begin{minted}{python}
+import networkx as nx
+import random
+
+n = 100
+p = 0.05
+
+G = nx.erdos_renyi_graph(n, p)
+
+# Salva gli archi del grafo nel file .EDGES
+with open('networks/generated_networks/graph.EDGES', 'w') as edges_file:
+    for edge in G.edges():
+        edges_file.write(f"{edge[0]} {edge[1]}\n")
+
+# Assegna casualmente i nodi ai cerchi e salva queste informazioni nel file .CIRCLES
+circles = {}
+
+for node in G.nodes():
+    circle_id = f"circle_{random.randint(1, 5)}"  # Assegna casualmente il nodo a uno dei 5 cerchi
+    if circle_id not in circles:
+        circles[circle_id] = []
+    circles[circle_id].append(str(node))
+
+with open('networks/generated_networks/graph.CIRCLES', 'w') as circles_file:
+    for circle_id, members in circles.items():
+        circles_file.write(f"{circle_id} {' '.join(members)}\n")
+\end{minted}
+\end{code}
+
+\subsection{Script Handler}
+
+Eseguire lo script avvia un handler ("main") che, per prima cosa, individua un seed set massimale utilizzando l'algoritmo di diffusione specificato dall'utente, che - appunto - si occupa di individuare il seed set massimale tale che la funzione di costo associata sia minore di un certo budget. Il seed set individuato viene quindi stampato a schermo. In seguito, viene creato un oggetto \texttt{CascadeProcess} per simulare il processo di diffusione nel grafo utilizzando il seed set precedentemente identificato. L'output di questa simulazione sono i nodi influenzati dal processo di diffusione, inclusi quelli nel seed set, che vengono stampati a schermo. Infine, se l'opzione di salvataggio dei risultati è attiva, i risultati vengono salvati in una cartella specificata.
+
+\begin{code}
+\begin{minted}{python}
+if __name__ == "__main__": 
+    spreading_process: SpreadingProcess = SpreadingProcess(options = setup_options())
+
+    """
+    Individua il seed set massimale tale che la funzione di costo c(S) 
+    sia minore o uguale al threshold k.
+    """
+    seed_set: list = \
+         spreading_process   \
+        .spreading_algorithm \
+        .get_seed_set()
+    
+    print(f"Seed Set: {seed_set}")
+
+    """
+    Simula il processo di diffusione a partire dal grafo G 
+    e il seed set S individuato in precedenza,
+    restituendo i nodi influenzati al termine 
+    del processo (inclusivi dei nodi appartenenti al seed set).
+    """
+    cascade_process: CascadeProcess = CascadeProcess(
+        graph = spreading_process.G, 
+        seed_set = seed_set,
+        verbose = spreading_process.options.verbose
+    )
+
+    influenced_nodes: list = \
+         cascade_process \
+        .get_influenced_nodes()
+
+    print(f"Influenced Nodes: {influenced_nodes}")
+
+    """
+    Persiste i risultati in una cartella.
+    """
+    if spreading_process.options.save:
+        save_results(
+            file_path = f"{spreading_process.results_path}",
+            results = f"Seed Set: {len(seed_set)} \ 
+            Influenced Nodes: {len(influenced_nodes)}",
+            graph = spreading_process.G,
+            seed_set = seed_set,
+            influenced_nodes = influenced_nodes
+        )
+\end{minted}
+\end{code}
+
+\subsubsection{CLI Parser}
+
+Questa funzione è progettata per configurare e gestire le opzioni della linea di comando dello script, utilizzando la libreria \texttt{argparse} per facilitare l'interpretazione e l'elaborazione degli argomenti forniti dall'utente. Inizialmente, viene creato un parser di argomenti con \texttt{argparse.ArgumentParser()}, che consente di definire una serie di opzioni configurabili dall'utente.
+
+\begin{code}
+\begin{minted}{python}
+# Consultare il README per le possibili configurazioni dello script
+def setup_options() -> None:
+        parser: argparse.ArgumentParser = argparse.ArgumentParser()
+
+        parser.add_argument('-g', '--print_graph', action = 'store_true')
+        parser.add_argument('-v', '--verbose', action = 'store_true')
+        parser.add_argument('-s', '--save', action = 'store_true')
+
+        parser.add_argument('-k', '--threshold', default = config.DEFAULT_THRESHOLD)
+        parser.add_argument('-e', '--edges', default = config.DEFAULT_EDGES)
+        parser.add_argument('-c', '--circles', default = config.DEFAULT_CIRCLES)
+
+        parser.add_argument('-cf', '--cost_function', default = config.DEFAULT_COST_FUNCTION, choices = ['1', '2', '3'])
+        parser.add_argument('-sf', '--submodular_function', default = config.DEFAULT_SUBMODULAR_FUNCTION, choices = ['1', '2', '3'])
+        parser.add_argument('-a', '--algorithm', default = config.DEFAULT_ALGORITHM, choices = ['1', '2', '3'])
+
+        args = parser.parse_args()
+
+        print(f"Caricati i nodi da {args.circles}")
+        print(f"Caricati gli archi da {args.edges}")
+
+        return args
+\end{minted}
+\end{code}
+
+\subsubsection{Classe SpreadingProcess}
+
+La classe \mintinline{python}{SpreadingProcess} è progettata per gestire il processo di diffusione nel grafo, configurato secondo le opzioni specificate dall'utente tramite la CLI. Durante l'inizializzazione, vengono impostati i parametri fondamentali come il grafo, la soglia di diffusione (budget $ k $), la funzione di costo e l'algoritmo di diffusione. Il percorso per salvare i risultati è generato dinamicamente, includendo i parametri selezionati per garantire tracciabilità e riproducibilità.
+
+La funzione \mintinline{python}{setup_graph} legge i file degli archi e delle cerchie specificati dall'utente per costruire il grafo. Se l'opzione \mintinline{python}{-g} o \mintinline{python}{--print_graph} è attivata, il grafo viene visualizzato utilizzando Matplotlib. La funzione \mintinline{python}{setup_cost_function} seleziona una funzione di costo basata sull'opzione \mintinline{python}{-cf} o \mintinline{python}{--cost_function}, utilizzando una factory per ottenere la funzione appropriata. Infine, il metodo \mintinline{python}{setup_spreading_algorithm} configura l'algoritmo di diffusione secondo l'opzione \mintinline{python}{-a} o \mintinline{python}{--algorithm}, tenendo conto della funzione submodulare specificata. Questi metodi garantiscono che il processo di diffusione sia personalizzato e adattabile a diverse esigenze di sperimentazione.
+
+\begin{code}
+\begin{minted}{python}
+class SpreadingProcess():
+    def __init__(self, options):
+        self.options = options
+
+        self.G: Graph = self.setup_graph()
+        self.k: int = int(self.options.threshold)
+        self.cost_function: callable = self.setup_cost_function()
+        self.spreading_algorithm: SpreadingAlgorithm = self.setup_spreading_algorithm()
+
+        self.results_path = f"{config.DEFAULT_RESULTS_PATH}/{time.time()}_k_{self.k}\
+        _a_{self.options.algorithm}_cf_{self.options.cost_function}"
+
+
+    # Per selezionare liste di nodi ed archi differenti, usare le opzioni -c (--circles) ed -e (--edges)
+    def setup_graph(self) -> Graph:
+        graph: Graph = nl.read_network(
+            edges_file_path = self.options.edges,
+            circles_file_path = self.options.circles
+    )
+
+        # Per stampare il grafo, usare l'opzione -g oppure --print_graph
+        if self.options.print_graph:
+            nx.draw(G = graph, pos = nx.spring_layout(graph), with_labels = True)
+            plt.show(block = False)
+
+        return graph
+
+
+    # Per selezionare una funzione di costo, usare l'opzione -cf oppure --cost-function, es. -cf 1 (valori ammessi: 1, 2, 3)
+    def setup_cost_function(self) -> callable:
+        selected_algorithm_index: int = int(self.options.cost_function) # Rappresenta la funzione di costo scelta (1, 2 o 3)
+
+        cost_function_factory: cf.CostFunctionFactory = cf.CostFunctionFactory(
+            selected_algorithm_index = selected_algorithm_index,
+            graph = self.G,
+            range_min = config.DEFAULT_RANGE_MIN,
+            range_max = config.DEFAULT_RANGE_MAX,
+            d_max = max(dict(self.G.degree()).values()),
+            verbose = self.options.verbose
+        )
+        
+        return cost_function_factory.get_function()
+
+
+    # Per selezionare un algoritmo, usare l'opzione -a oppure --algorithm, es. -a 1 (valori ammessi: 1, 2, 3)
+    def setup_spreading_algorithm(self) -> SpreadingAlgorithm:
+        selected_algorithm_index: int = int(self.options.algorithm) # Rappresenta l'algoritmo scelto (1, 2 o 3)
+
+        """
+        Questa variabile rappresenta la funzione submodulare selezionata 
+        tramite l'opzione -sf oppure --submodular--function 
+        (valori ammessi: 1, 2, 3). La funzione entra in gioco solo 
+        nel caso dell'algoritmo Cost-Seeds-Greedy, 
+        ma viene ugualmente pre-impostato ad un valore di default.
+        """
+        selected_submodular_function_index: int = int(self.options.submodular_function) 
+
+        spreading_algorithm: SpreadingAlgorithm = SpreadingAlgorithm(
+            selected_algorithm_index = selected_algorithm_index,
+            selected_submodular_function_index = selected_submodular_function_index,
+            graph = self.G,
+            threshold = self.k,
+            cost_function = self.cost_function,
+            verbose = self.options.verbose
+        )
+
+        return spreading_algorithm
+\end{minted}
+\end{code}
+
+\subsubsection{Configurazione programmatica}
+
+E' possibile configurare i parametri di default dello script modificando il file \mintinline{python}{default_config.py}. Le opzioni di default, indicate nel file, sono sovrascribili mediante CLI, come indicato nella sezione successiva.
+
+\begin{code}
+\begin{minted}{python}
+from enum import Enum
+
+# Configurazioni di default, sovrascrivibili tramite CLI
+
+DEFAULT_THRESHOLD = 6
+
+DEFAULT_EDGES = 'networks/generated_networks/graph.EDGES'
+DEFAULT_CIRCLES = 'networks/generated_networks/graph.CIRCLES'
+
+DEFAULT_RANGE_MIN = 1
+DEFAULT_RANGE_MAX = 10
+
+DEFAULT_COST_FUNCTION = 1
+DEFAULT_SUBMODULAR_FUNCTION = 1
+DEFAULT_ALGORITHM = 1
+
+DEFAULT_RESULTS_PATH = "results"
+
+class Algorithms(Enum):
+    COST_SEEDS_GREEDY = 1
+    WTSS = 2
+    MY_SEEDS = 3
+\end{minted}
+\end{code}
+
+\subsubsection{Salvare i risultati}
+
+Questa semplice utility permette di persistere i risultati e salvarli in una cartella. In particolare, genera dei grafici appena generato il grafo, dopo aver individuato il seed set, e dopo aver effettuato il processo di influenza, colorando in modo diverso i rispettivi nodi del grafo.
+
+\begin{code}
+\begin{minted}{python}
+def save_results(file_path, results, graph, seed_set, influenced_nodes):
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
+
+    with open(f"{file_path}/data.txt", "a") as file:
+        file.write(f"{results}\n")
+
+    """
+    Grafico della rete senza particolari colorazioni
+    """
+    color_map = []
+
+    for node in graph.nodes():
+        color_map.append('gray')
+
+    nx.draw(G = graph, with_labels = False, pos = nx.spring_layout(graph, scale = 3), node_color = color_map, node_size = 10)
+    plt.savefig(f"{file_path}/pre-influencing.png", format = "PNG")
+    plt.clf()
+
+    """
+    Grafico che evidenzia i nodi del seed set (rossi) 
+    e i nodi rimanenti (grigio)
+    """
+    color_map = []
+
+    for node in graph.nodes():
+        if node in seed_set:
+            color_map.append('red')
+        else:
+            color_map.append('gray')
+
+    nx.draw(G = graph, with_labels = False, pos = nx.spring_layout(graph, scale = 3), node_color = color_map, node_size = 10)
+    plt.savefig(f"{file_path}/influencing.png", format = "PNG")
+    plt.clf()
+
+    """
+    Grafico che evidenzia i nodi del seed set (rossi), 
+    i nodi influenzati dal seed set (blu) 
+    e i nodi rimanenti (grigio)
+    """
+    color_map = []
+
+    for node in graph.nodes():
+        if node in seed_set:
+            color_map.append('red')
+        elif int(node) in influenced_nodes: 
+            color_map.append('blue')
+        else:
+            color_map.append('gray')
+
+    nx.draw(G = graph, with_labels = False, pos = nx.spring_layout(graph, scale = 3), node_color = color_map, node_size = 10)
+    plt.savefig(f"{file_path}/influencing_and_influenced.png", format = "PNG")
+    plt.clf()
+
+    print(f"Risultati salvati in {file_path}")
+\end{minted}
+\end{code}

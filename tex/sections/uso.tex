@@ -1,0 +1,84 @@
+\section{Installazione ed utilizzo}
+\lhead{Installazione ed utilizzo} % section header
+
+Il primo comando eseguito è \texttt{conda create -n rs python=3.7.0}. Questo comando utilizza Conda, un gestore di pacchetti e ambienti per Python, per creare un nuovo ambiente virtuale denominato rs. Specificando \texttt{python=3.7.0}, si impone l'installazione della versione 3.7.0 di Python all'interno di questo ambiente. La scelta di una versione specifica di Python è cruciale per assicurare la compatibilità con i pacchetti e le librerie che verranno successivamente installati, evitando potenziali conflitti dovuti a differenze di versione.
+
+Successivamente, l'ambiente appena creato viene attivato con il comando \texttt{conda activate rs}. L'attivazione dell'ambiente rs fa sì che tutte le operazioni successive nel terminale avvengano all'interno di questo ambiente isolato. Ciò permette di gestire le dipendenze specifiche del progetto senza interferire con altre versioni di pacchetti o librerie installate globalmente o in altri ambienti.
+
+Infine, il comando \texttt{pip install -r requirements.txt} viene eseguito per installare tutte le dipendenze elencate nel file \texttt{requirements.txt}. Il file requirements.txt contiene una lista di pacchetti necessari per il progetto, ognuno specificato con la sua versione. 
+
+\begin{code}
+\begin{minted}{python}
+conda create -n rs python=3.7.0
+conda activate rs
+pip install -r requirements.txt
+\end{minted}
+\end{code}
+
+\begin{code}
+\begin{minted}{python}
+python main.py [-h] [-g] [-v] [-s] [-k THRESHOLD] [-e EDGES] [-c CIRCLES] [-cf {1,2,3}] [-sf {1,2,3}] [-a {1,2,3}]
+\end{minted}
+\end{code}
+
+La CLI offre una serie di opzioni che permettono di eseguire il programma principale \texttt{main.py} con diversi parametri e modalità operative. Di seguito vengono illustrati i vari comandi utilizzabili, insieme alle loro rispettive funzioni.
+
+L'esecuzione standard del programma, che avvia il processo di diffusione con i parametri di default, si ottiene semplicemente digitando \texttt{python main.py}. Questa modalità è utilizzata per eseguire l'algoritmo principale senza specificare ulteriori opzioni, sfruttando i valori predefiniti per tutti i parametri.
+
+Per abilitare la modalità verbosa, che consente di ottenere informazioni dettagliate durante l'esecuzione del programma, si utilizza il comando \texttt{python main.py -v}. Questa opzione è utile per il debug e per monitorare in dettaglio il comportamento dell'algoritmo, fornendo un output più ricco di informazioni rispetto all'esecuzione standard.
+
+L'opzione \texttt{-g} attiva la stampa di debug del grafo, mentre \texttt{-s} permette di salvare i risultati dell'esecuzione. Queste due opzioni possono essere combinate, come mostrato nel comando \texttt{python main.py -g -s}, che consente di visualizzare le informazioni dettagliate sul grafo utilizzato e di salvare i risultati prodotti dall'algoritmo.
+
+Per utilizzare un grafo personalizzato, è possibile specificare i file contenenti le informazioni sulle connessioni e i nodi del grafo mediante le opzioni \texttt{-e} e \texttt{-c}.
+
+La CLI permette anche di selezionare diversi algoritmi per l'individuazione del set di semi (seed set), utilizzando l'opzione \texttt{-a} seguita da un numero identificativo dell'algoritmo. Ad esempio, \texttt{python main.py -a=1} utilizza l'algoritmo Cost-Seeds-Greedy, \texttt{python main.py -a=2} utilizza l'algoritmo WTSS, mentre \texttt{python main.py -a=3} utilizza l'algoritmo My-Seeds. Questa flessibilità consente di confrontare le performance di diversi algoritmi sotto le stesse condizioni.
+
+Inoltre, è possibile selezionare specifiche funzioni di costo e funzioni submodulari mediante le opzioni \texttt{-cf} e \texttt{-sf}. Ad esempio, il comando \texttt{python main.py -cf=1} seleziona i costi randomizzati come funzione di costo, mentre \texttt{python main.py -sf=2} seleziona la seconda funzione submodulare. È possibile combinare queste opzioni come illustrato nel comando \texttt{python main.py -cf=1 -sf=3}, che utilizza costi randomizzati e la terza funzione submodulare.
+
+\begin{code}
+\begin{minted}{python}
+### Esegue il processo di diffusione con i parametri di default
+python main.py
+
+### Abilita la modalità verbosa
+python main.py -v
+
+### Abilita la stampa di debug del grafo e salva i risultati
+python main.py -g -s
+
+### Seleziona ed utilizza un grafo personalizzato
+python main.py -e=networks/sample_networks/0.edges -c=networks/sample_networks/0.circles
+
+### Seleziona uno specifico algoritmo di individuazione del seed set
+python main.py -a=1 # Cost-Seeds-Greedy
+python main.py -a=2 # WTSS
+python main.py -a=3 # My-Seeds
+
+### Seleziona specifiche funzioni di costo e funzioni submodulari (es. 1, 2, 3)
+python main.py -cf=1 # Random Costs
+python main.py -sf=2 # Second Submodular Function (ref. Costs-Seeds-Greedy)
+python main.py -cf=1 -sf=3 # Random Costs & Second Submodular Function
+\end{minted}
+\end{code}
+
+\subsection{Dipendenze e librerie}
+
+Le librerie Python utilizzate per il progetto sono state annotate con le rispettive versioni in un pratico file $ requirements.txt $ nella directory del progetto. E' possibile installarle tramite l'utility PIP. Si noti che queste dipendenze sono fondamentali per eseguire il progetto. 
+
+\begin{code}
+\begin{minted}{python}
+cycler==0.11.0
+fonttools==4.38.0
+kiwisolver==1.4.5
+matplotlib==3.5.3
+networkx==2.6.3
+numpy==1.21.6
+packaging==24.0
+Pillow==9.5.0
+pyparsing==3.1.2
+python-dateutil==2.9.0.post0
+scipy==1.7.3
+six==1.16.0
+typing_extensions==4.7.1
+\end{minted}
+\end{code}
